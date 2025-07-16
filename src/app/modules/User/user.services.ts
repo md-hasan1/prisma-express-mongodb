@@ -2,6 +2,7 @@ import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import { IUser, IUserFilterRequest } from "./user.interface";
 import * as bcrypt from "bcrypt";
+import crypto from 'crypto';
 import { IPaginationOptions } from "../../../interfaces/paginations";
 import { paginationHelper } from "../../../helpars/paginationHelper";
 import { Prisma, User, UserRole } from "@prisma/client";
@@ -12,50 +13,86 @@ import { Request } from "express";
 import { fileUploader } from "../../../helpars/fileUploader";
 import { Secret } from "jsonwebtoken";
 import { jwtHelpers } from "../../../helpars/jwtHelpers";
+import { generateOtpEmail } from "../../../shared/emaiHTMLtext";
+import emailSender from "../../../shared/emailSender";
 
 // Create a new user in the database.
-const createUserIntoDb = async (payload: User) => {
+const createUserIntoDb = async (payload: IUser) => {
   const existingUser = await prisma.user.findFirst({
     where: {
       email: payload.email,
     },
-  });
+  })
 
-  if (existingUser) {
-    if (existingUser.email === payload.email) {
-      throw new ApiError(
-        400,
-        `User with this email ${payload.email} already exists`
-      );
+  const otp = Number(crypto.randomInt(1000, 9999));
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    if (existingUser) {
+
+    if (existingUser.varified === 'ACTIVE') {
+      throw new ApiError(400, `User with email ${payload.email} is already active.`);
+    }
+
+    if (existingUser.varified === 'INACTIVE') {
+      const updatedData: Record<string, any> = {
+        varified: 'INACTIVE',
+        expirationOtp: otpExpires,
+        otp,
+      };
+
+      if (payload.password) {
+        const hashedPassword = await bcrypt.hash(payload.password, Number(config.bcrypt_salt_rounds));
+        updatedData.password = hashedPassword;
+      }
+
+      if (payload.fcmToken) {
+        updatedData.fcmToken = payload.fcmToken;
+      }
+
+      if (payload.role){
+        updatedData.role = payload.role;
+      }
+
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: updatedData,
+      });
+      const html = generateOtpEmail(otp);
+      await emailSender(payload.email, html, 'OTP Verification');
+
+      console.log("otp", otp);
+      return { message: 'An OTP has been sent to your email. Please verify your account.' };
     }
   }
-  const hashedPassword: string = await bcrypt.hash(
-    payload.password,
-    Number(config.bcrypt_salt_rounds)
-  );
 
-  const result = await prisma.user.create({
-    data: { ...payload, password: hashedPassword },
-    select: {
-      id: true,
-      email: true,
-      role: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-  const token = jwtHelpers.generateToken(
-    {
-      id: result.id,
-      email: result.email,
-      role: result.role,
-    },
-    config.jwt.jwt_secret as Secret,
-    config.jwt.expires_in as string
-  );
+  if (!payload.password) {
+    throw new ApiError(400, 'Password is required');
+  }
 
-  return { result, token };
-};
+  const hashedPassword = await bcrypt.hash(payload.password, Number(config.bcrypt_salt_rounds));
+
+  const newUser = await prisma.user.create({
+    data:{
+      fullName: payload.fullName,
+      email: payload.email,
+      password: hashedPassword,
+      role: payload.role,
+      varified: 'INACTIVE',
+      fcmToken: payload.fcmToken,
+      otp: otp,
+      expirationOtp: otpExpires,
+    }
+  })
+  if (!newUser) {
+    throw new ApiError(500, 'Failed to create user');
+  }
+
+  const html = generateOtpEmail(otp);
+  await emailSender(payload.email, html, 'OTP Verification');
+
+  console.log("otp", otp);
+  return { message: 'An OTP has been sent to your email. Please verify your account.' };
+}
 
 // reterive all users from the database also searcing anf filetering
 const getUsersFromDb = async (

@@ -28,8 +28,8 @@ const generateModule = moduleName => {
   const files = {
     controller: `
 import httpStatus from 'http-status';
-import sendResponse from '../../utils/sendResponse';
-import catchAsync from '../../utils/catchAsync';
+import sendResponse from '../../../shared/sendResponse';
+import catchAsync from '../../../shared/catchAsync';
 import { ${moduleName}Service } from './${moduleName}.service';
 
 const create${capitalizedModule} = catchAsync(async (req, res) => {
@@ -92,10 +92,10 @@ export const ${moduleName}Controller = {
     `,
 
     service: `
-import prisma from '../../utils/prisma';
-import { UserRoleEnum, UserStatus } from '@prisma/client';
-import AppError from '../../errors/AppError';
-import httpStatus from 'http-status';
+import prisma from "../../../shared/prisma";
+import { UserStatus } from '@prisma/client';
+import ApiError from "../../../errors/ApiErrors";
+import httpStatus from "http-status";
 
 
 const createIntoDb = async (data: any) => {
