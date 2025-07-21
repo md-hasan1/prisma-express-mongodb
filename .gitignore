@@ -1,4 +1,6 @@
-node_modules
-# Keep environment variables out of version control
-dist
-.vercel
+node_modules
+# Keep environment variables out of version control
+dist
+.vercel
+config.bat
+.env

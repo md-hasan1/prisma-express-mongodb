@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.717.0",
+    "@google-cloud/storage": "^7.16.0",
     "@prisma/client": "^5.19.1",
     "@types/jsonwebtoken": "^9.0.6",
     "aws": "^0.0.3-2",
@@ -40,7 +41,6 @@
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^8.0.0",
     "http-status": "^1.7.4",
