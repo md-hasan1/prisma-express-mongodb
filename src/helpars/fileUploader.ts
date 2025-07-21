@@ -9,6 +9,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import streamifier from "streamifier"; 
 import dotenv from "dotenv";
+import { Storage } from "@google-cloud/storage";
 
 dotenv.config();
 
@@ -122,6 +123,42 @@ const uploadToDigitalOcean = async (file: Express.Multer.File) => {
   }
 };
 
+// Initialize GCS client with service account credentials from env
+const storageGSC = new Storage({
+  credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS || "{}"),
+});
+
+// GCS Bucket name
+const bucketName = process.env.GOOGLE_BUCKET_NAME || "your_default_bucket_name";
+
+// Upload file buffer to GCS and return public URL
+export const uploadToGoogleCloud = async (
+  file: Express.Multer.File,
+  destinationPrefix: string = "uploads"
+): Promise<{ Location: string; gcsPath: string }> => {
+  if (!file) throw new Error("File is required for Google Cloud upload.");
+
+  const timestampedFileName = `${Date.now()}_${file.originalname}`;
+  const destinationPath = `${destinationPrefix}/${timestampedFileName}`;
+
+  const bucket = storageGSC.bucket(bucketName);
+  const gcsFile = bucket.file(destinationPath);
+
+  // Upload the file
+  await gcsFile.save(file.buffer, {
+    resumable: false,
+    contentType: file.mimetype,
+  });
+
+  // ✅ Ensure public access
+  await gcsFile.makePublic();
+
+  return {
+    Location: `https://storage.googleapis.com/${bucketName}/${destinationPath}`,
+    gcsPath: `gs://${bucketName}/${destinationPath}`,
+  };
+};
+
 // ✅ No Name Changes, Just Fixes
 export const fileUploader = {
   upload,
@@ -132,4 +169,5 @@ export const fileUploader = {
   cloudinaryUpload,
   uploadToDigitalOcean,
   uploadToCloudinary,
+  uploadToGoogleCloud
 };
