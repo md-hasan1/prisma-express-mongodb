@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node ./dist/server.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
+    "start": "node init && node ./dist/server.js",
+    "dev": "node init && ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "node init && tsc",
     "generate": "ts-node src/generate-module.js",
     "postinstall": "prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.717.0",
+    "@google-cloud/storage": "^7.16.0",
     "@prisma/client": "^5.19.1",
     "@types/jsonwebtoken": "^9.0.6",
     "aws": "^0.0.3-2",
@@ -40,7 +41,7 @@
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^8.2.0",
     "express": "^4.19.2",
     "express-rate-limit": "^8.0.0",
     "http-status": "^1.7.4",
@@ -49,6 +50,7 @@
     "multer": "^1.4.5-lts.1",
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.14",
     "nodemon": "^3.1.4",
     "socket.io": "^4.7.5",
