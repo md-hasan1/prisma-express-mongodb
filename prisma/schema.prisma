@@ -21,7 +21,6 @@ model User {
   isCompleteProfile Boolean       @default(false)
   role              UserRole      @default(USER)
   status            UserStatus    @default(ACTIVE)
-  varified          UserStatus    @default(INACTIVE)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
