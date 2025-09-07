@@ -27,13 +27,11 @@ export const corsOptions = {
 };
 const loggerFormat = ':method :url :status :res[content-length] - :response-time ms';
 
-
-// Rate limiter middleware
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 2000,
   keyGenerator: (req: any) => {
-        // Extract IP address from the X-Forwarded-For header safely
+      
         const forwardedFor = req.headers['x-forwarded-for'];
         const ipArray = forwardedFor ? forwardedFor.split(/\s*,\s*/) : [];
         const ipAddress = ipArray.length > 0 ? ipArray[0] : req.connection.remoteAddress;
