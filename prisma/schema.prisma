@@ -11,6 +11,7 @@ model User {
   id                String        @id @default(auto()) @map("_id") @db.ObjectId
   fullName          String
   email             String        @unique
+  fcmToken          String?
   profileImage      String?
   coverImage        String?
   expirationOtp     DateTime?
@@ -20,6 +21,7 @@ model User {
   isCompleteProfile Boolean       @default(false)
   role              UserRole      @default(USER)
   status            UserStatus    @default(ACTIVE)
+  varified          UserStatus    @default(INACTIVE)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 

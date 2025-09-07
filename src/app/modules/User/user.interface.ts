@@ -3,8 +3,8 @@ import { UserRole, UserStatus } from "@prisma/client";
 export interface IUser {
   id?: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
+  fcmToken: string;
   password: string;
   role: UserRole;
   profession:string;
