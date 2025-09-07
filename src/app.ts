@@ -5,7 +5,6 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
 import router from "./app/routes";
-import rateLimit from "express-rate-limit";
 import morgan from 'morgan';
 
 const app: Application = express();
@@ -27,24 +26,7 @@ export const corsOptions = {
   credentials: true,
 };
 const loggerFormat = ':method :url :status :res[content-length] - :response-time ms';
-// Rate limiter middleware
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 2000,
-  keyGenerator: (req: any) => {
-        
-        const forwardedFor = req.headers['x-forwarded-for'];
-        const ipArray = forwardedFor ? forwardedFor.split(/\s*,\s*/) : [];
-        const ipAddress = ipArray.length > 0 ? ipArray[0] : req.connection.remoteAddress;
-        return ipAddress;
-    },
-  message: {
-    success: false,
-    message: "Too many requests from this IP, please try again after 15 minutes",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+
 
 // Rate limiter middleware
 const apiLimiter = rateLimit({
