@@ -117,7 +117,8 @@ const getByIdFromDb = async (id: string) => {
   
     const result = await prisma.${moduleName}.findUnique({ where: { id } });
     if (!result) {
-      throw new Error('${capitalizedModule} not found');
+      // throw new Error('${capitalizedModule} not found');
+       throw new ApiError(httpStatus.NOT_FOUND,'${capitalizedModule} not found');
     }
     return result;
   };
