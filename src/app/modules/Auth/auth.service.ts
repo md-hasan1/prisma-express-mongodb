@@ -8,8 +8,9 @@ import emailSender from "../../../shared/emailSender";
 import { UserStatus } from "@prisma/client";
 import httpStatus from "http-status";
 import crypto from 'crypto';
+import { generateOtpEmail } from "../../../shared/emaiHTMLtext";
 // user login
-const loginUser = async (payload: { email: string; password: string,fcmToken:string }) => {
+const loginUser = async (payload: { email: string; password: string; fcmToken?: string }) => {
   const userData = await prisma.user.findUnique({
     where: {
       email: payload.email,
@@ -30,13 +31,14 @@ const loginUser = async (payload: { email: string; password: string,fcmToken:str
   if (!isCorrectPassword) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Password incorrect!");
   }
-  if(payload.fcmToken){
+
+  // Update FCM token if provided
+  if (payload.fcmToken) {
     await prisma.user.update({
-      where: { id: userData.id }, 
+      where: { id: userData.id },
       data: { fcmToken: payload.fcmToken },
     });
   }
-  
   const accessToken = jwtHelpers.generateToken(
     {
       id: userData.id,
@@ -127,35 +129,7 @@ const forgotPassword = async (payload: { email: string }) => {
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
   // Create the email content
-  const html = `
-<div style="font-family: Arial, sans-serif; color: #333; padding: 30px; background: linear-gradient(135deg, #6c63ff, #3f51b5); border-radius: 8px;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px;">
-        <h2 style="color: #ffffff; font-size: 28px; text-align: center; margin-bottom: 20px;">
-            <span style="color: #ffeb3b;">Forgot Password OTP</span>
-        </h2>
-        <p style="font-size: 16px; color: #333; line-height: 1.5; text-align: center;">
-            Your forgot password OTP code is below.
-        </p>
-        <p style="font-size: 32px; font-weight: bold; color: #ff4081; text-align: center; margin: 20px 0;">
-            ${otp}
-        </p>
-        <div style="text-align: center; margin-bottom: 20px;">
-            <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
-                This OTP will expire in <strong>10 minutes</strong>. If you did not request this, please ignore this email.
-            </p>
-            <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
-                If you need assistance, feel free to contact us.
-            </p>
-        </div>
-        <div style="text-align: center; margin-top: 30px;">
-            <p style="font-size: 12px; color: #999; text-align: center;">
-                Best Regards,<br/>
-                <span style="font-weight: bold; color: #3f51b5;">Nmbull Team</span><br/>
-                <a href="mailto:support@nmbull.com" style="color: #ffffff; text-decoration: none; font-weight: bold;">Contact Support</a>
-            </p>
-        </div>
-    </div>
-</div> `;
+  const html = generateOtpEmail(otp);
 
   // Send the OTP email to the user
   await emailSender( userData.email, html,'Forgot Password OTP',);
@@ -191,36 +165,7 @@ const resendOtp = async (email: string) => {
   const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
   // Create email content
-  const html = `
-    <div style="font-family: Arial, sans-serif; color: #333; padding: 30px; background: linear-gradient(135deg, #6c63ff, #3f51b5); border-radius: 8px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px;">
-            <h2 style="color: #ffffff; font-size: 28px; text-align: center; margin-bottom: 20px;">
-                <span style="color: #ffeb3b;">Resend OTP</span>
-            </h2>
-            <p style="font-size: 16px; color: #333; line-height: 1.5; text-align: center;">
-                Here is your new OTP code to complete the process.
-            </p>
-            <p style="font-size: 32px; font-weight: bold; color: #ff4081; text-align: center; margin: 20px 0;">
-                ${otp}
-            </p>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
-                    This OTP will expire in <strong>5 minutes</strong>. If you did not request this, please ignore this email.
-                </p>
-                <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
-                    If you need further assistance, feel free to contact us.
-                </p>
-            </div>
-            <div style="text-align: center; margin-top: 30px;">
-                <p style="font-size: 12px; color: #999; text-align: center;">
-                    Best Regards,<br/>
-                    <span style="font-weight: bold; color: #3f51b5;">levimusuc@team.com</span><br/>
-                    <a href="mailto:support@booksy.buzz.com" style="color: #ffffff; text-decoration: none; font-weight: bold;">Contact Support</a>
-                </p>
-            </div>
-        </div>
-    </div>
-  `;
+  const html = generateOtpEmail(otp);
 
   // Send the OTP to user's email
   await emailSender(user.email, html, 'Resend OTP');
