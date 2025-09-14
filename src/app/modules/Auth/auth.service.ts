@@ -9,7 +9,7 @@ import { UserStatus } from "@prisma/client";
 import httpStatus from "http-status";
 import crypto from 'crypto';
 // user login
-const loginUser = async (payload: { email: string; password: string }) => {
+const loginUser = async (payload: { email: string; password: string,fcmToken:string }) => {
   const userData = await prisma.user.findUnique({
     where: {
       email: payload.email,
@@ -30,6 +30,13 @@ const loginUser = async (payload: { email: string; password: string }) => {
   if (!isCorrectPassword) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Password incorrect!");
   }
+  if(payload.fcmToken){
+    await prisma.user.update({
+      where: { id: userData.id }, 
+      data: { fcmToken: payload.fcmToken },
+    });
+  }
+  
   const accessToken = jwtHelpers.generateToken(
     {
       id: userData.id,

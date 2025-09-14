@@ -8,25 +8,41 @@ datasource db {
 }
 
 model User {
-  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
   fullName          String
-  email             String        @unique
+  email             String         @unique
   profileImage      String?
   coverImage        String?
   expirationOtp     DateTime?
   otp               Int?
   password          String
-  isApproved        Boolean       @default(false)
-  isCompleteProfile Boolean       @default(false)
-  role              UserRole      @default(USER)
-  status            UserStatus    @default(ACTIVE)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  isApproved        Boolean        @default(false)
+  isCompleteProfile Boolean        @default(false)
+  fcmToken         String?
+  role              UserRole       @default(USER)
+  status            UserStatus     @default(ACTIVE)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  receiver          Notification[] @relation("Receiver")
+  sender            Notification[] @relation("Sender")
 
   @@map("users")
 }
 
+model Notification {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  receiverId String   @db.ObjectId
+  senderId   String   @db.ObjectId
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id])
+  sender     User     @relation("Sender", fields: [senderId], references: [id])
+  title      String
+  body       String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
+  @@map("notifications")
+}
 
 enum UserRole {
   ADMIN
