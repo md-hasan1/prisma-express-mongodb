@@ -29,40 +29,8 @@ const createUserIntoDb = async (payload: IUser) => {
 
     if (existingUser) {
 
-    if (existingUser.varified === 'ACTIVE') {
-      throw new ApiError(400, `User with email ${payload.email} is already active.`);
-    }
 
-    if (existingUser.varified === 'INACTIVE') {
-      const updatedData: Record<string, any> = {
-        varified: 'INACTIVE',
-        expirationOtp: otpExpires,
-        otp,
-      };
 
-      if (payload.password) {
-        const hashedPassword = await bcrypt.hash(payload.password, Number(config.bcrypt_salt_rounds));
-        updatedData.password = hashedPassword;
-      }
-
-      if (payload.fcmToken) {
-        updatedData.fcmToken = payload.fcmToken;
-      }
-
-      if (payload.role){
-        updatedData.role = payload.role;
-      }
-
-      await prisma.user.update({
-        where: { id: existingUser.id },
-        data: updatedData,
-      });
-      const html = generateOtpEmail(otp);
-      await emailSender(payload.email, html, 'OTP Verification');
-
-      console.log("otp", otp);
-      return { message: 'An OTP has been sent to your email. Please verify your account.' };
-    }
   }
 
   if (!payload.password) {
@@ -77,7 +45,7 @@ const createUserIntoDb = async (payload: IUser) => {
       email: payload.email,
       password: hashedPassword,
       role: payload.role,
-      varified: 'INACTIVE',
+
       fcmToken: payload.fcmToken,
       otp: otp,
       expirationOtp: otpExpires,

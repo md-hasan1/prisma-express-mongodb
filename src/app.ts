@@ -6,7 +6,7 @@ import rateLimit from "express-rate-limit";
 import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
 import router from "./app/routes";
 import morgan from 'morgan';
-
+import path from "path";
 const app: Application = express();
 
 export const corsOptions = {
@@ -52,7 +52,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(morgan(loggerFormat)); 
-
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {

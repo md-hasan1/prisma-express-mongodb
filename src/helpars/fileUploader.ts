@@ -10,6 +10,8 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 import streamifier from "streamifier"; 
 import dotenv from "dotenv";
 import { Storage } from "@google-cloud/storage";
+import path from "path";
+import fs from "fs";
 
 dotenv.config();
 
@@ -159,6 +161,31 @@ export const uploadToGoogleCloud = async (
   };
 };
 
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, "..", "..", "uploads");
+const checkAndCreateUploadDir = () => {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log("Upload directory created.");
+  }
+};
+
+const uploadToLocal = async (file: Express.Multer.File) => {
+  if (!file) {
+    throw new Error("File is required for uploading.");
+  }
+
+  // Ensure the upload directory exists
+  checkAndCreateUploadDir();
+
+  // Generate local URL assuming Express serves static `/uploads`
+  const fileURL = `${process.env.BACK_END_URL}/uploads/${file.filename}`;
+  return {
+    Location: fileURL,
+    fileName: file.filename,
+    mimeType: file.mimetype,
+  };
+};
 // ✅ No Name Changes, Just Fixes
 export const fileUploader = {
   upload,
