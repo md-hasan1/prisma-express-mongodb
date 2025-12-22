@@ -26,7 +26,9 @@ export const corsOptions = {
   credentials: true,
 };
 const loggerFormat = ':method :url :status :res[content-length] - :response-time ms';
+app.set("view engine", "ejs");
 
+app.set("views", "./src/views");
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 2000,
@@ -56,11 +58,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
-  res.send({
-    success: true,
-    statusCode: httpStatus.OK,
-    message: "The server is running!",
-  });
+res.render("index.ejs");
 });
 
 // Rate limit only for API routes
