@@ -11,22 +11,46 @@ model User {
   id                String         @id @default(auto()) @map("_id") @db.ObjectId
   fullName          String
   email             String         @unique
+  country           String?
   profileImage      String?
-  coverImage        String?
+  isCompleteProfile Boolean        @default(false)
   expirationOtp     DateTime?
   otp               Int?
   password          String
-  isApproved        Boolean        @default(false)
-  isCompleteProfile Boolean        @default(false)
-  fcmToken         String?
+  fcmToken          String?
   role              UserRole       @default(USER)
   status            UserStatus     @default(ACTIVE)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   receiver          Notification[] @relation("Receiver")
   sender            Notification[] @relation("Sender")
+  products          Product[]
 
   @@map("users")
+}
+
+model Product {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  description       String?
+  price             Float
+  stock             Int
+  category          String?
+  image             String?
+  brand             String?
+  isDiscounted      Boolean         @default(false)
+  discountPercent   Float?
+  tags              String[]
+  isActive          Boolean         @default(true)
+  weight            Float?
+  colors             String[]
+  dimensions        String?
+  userId            String?         @db.ObjectId 
+  user              User?           @relation(fields: [userId], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("products")
 }
 
 model Notification {
