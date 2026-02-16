@@ -76,6 +76,7 @@ const getProductsFromDb = async (filters: any, options: any, id: string) => {
     }
     where.AND.push({ category: filters.category });
   }
+  //ldl;djf
   return prisma.product.findMany({
     where,
     select: {
