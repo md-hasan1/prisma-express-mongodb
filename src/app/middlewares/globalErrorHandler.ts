@@ -5,6 +5,8 @@ import { ZodError } from "zod";
 import handleZodError from "../../errors/handleZodError";
 import parsePrismaValidationError from "../../errors/parsePrismaValidationError";
 import ApiError from "../../errors/ApiErrors";
+import fs from 'fs';
+import path from 'path';
 
 // TODO Replace `config.NODE_ENV` with your actual environment configuration
 
@@ -12,7 +14,35 @@ import ApiError from "../../errors/ApiErrors";
 const config = {
   NODE_ENV: process.env.NODE_ENV || "development",
 };
+interface ErrorLog {
+  time: string;
+  status: number;
+  method: string;
+  path: string;
+  message: string;
+  user: string;
+  stack?: string;
+}
 
+const saveErrorToFile = (logObj: ErrorLog) => {
+  console.log(__dirname)
+  const logsDir = path.join(__dirname, '../logs');
+  const logPath = path.join(logsDir, 'errors.log');
+  // console.log({logsDir, logPath})
+
+  // 🛡️ Ensure the logs directory exists
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+//test
+  const logMessage = `[${logObj.time}] ${logObj.status} - ${logObj.method} ${logObj.path} - ${logObj.message}\nUser: ${logObj.user}\nStack: ${logObj.stack || 'N/A'}\n\n`;
+
+  fs.appendFile(logPath, logMessage, (err) => {
+    if (err) {
+      console.error('❌ Failed to write error log:', err);
+    }
+  });
+};
 const GlobalErrorHandler = (
   err: any,
   req: Request,
@@ -82,7 +112,18 @@ const GlobalErrorHandler = (
     message = "An unexpected error occurred!";
     errorSources.push("Unknown Error");
   }
+  // ✅ Log error to file
+  const errorLog = {
+    time: new Date().toISOString(),
+    status: statusCode,
+    message,
+    path: req.originalUrl,
+    method: req.method,
+    user: req.user?.id || "Unauthenticated",
+    stack: err.stack || '',
+  };
 
+  saveErrorToFile(errorLog); // 💾 RIGHT HERE
   res.status(statusCode).json({
     success: false,
     message,
