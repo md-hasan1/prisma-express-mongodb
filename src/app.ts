@@ -28,7 +28,7 @@ export const corsOptions = {
 const loggerFormat = ':method :url :status :res[content-length] - :response-time ms';
 app.set("view engine", "ejs");
 
-app.set("views", "./src/views");
+// app.set("views", "./src/views");
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 2000,
@@ -56,9 +56,13 @@ app.use(express.static("public"));
 app.use(morgan(loggerFormat)); 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+// // Root endpoint
+// app.get("/", (req: Request, res: Response) => {
+// res.render("index.ejs");
+// });
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
-res.render("index.ejs");
+res.status(200).json({massage:"server is running"})
 });
 
 // Rate limit only for API routes

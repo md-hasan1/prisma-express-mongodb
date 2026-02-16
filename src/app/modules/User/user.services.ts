@@ -2,89 +2,122 @@ import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import { IUser, IUserFilterRequest } from "./user.interface";
 import * as bcrypt from "bcrypt";
-import crypto from 'crypto';
 import { IPaginationOptions } from "../../../interfaces/paginations";
 import { paginationHelper } from "../../../helpars/paginationHelper";
-import { Prisma, User, UserRole } from "@prisma/client";
+import { Prisma, UserRole, UserStatus } from "@prisma/client";
 import { userSearchAbleFields } from "./user.costant";
 import config from "../../../config";
 import httpStatus from "http-status";
-import { Request } from "express";
+import e, { Request } from "express";
 import { fileUploader } from "../../../helpars/fileUploader";
-import { Secret } from "jsonwebtoken";
-import { jwtHelpers } from "../../../helpars/jwtHelpers";
-import { generateOtpEmail } from "../../../shared/emaiHTMLtext";
+import crypto from "crypto";
 import emailSender from "../../../shared/emailSender";
+import { generateOtpEmail } from "../../../shared/emaiHTMLtext";
 
-// Create a new user in the database.
+// Create a new user
 const createUserIntoDb = async (payload: IUser) => {
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      email: payload.email,
-    },
-  })
-
+  // Check if user already exists
   const otp = Number(crypto.randomInt(1000, 9999));
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+  const otpExpiration = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const existingUser = await prisma.user.findFirst({
+    where: { email: payload.email },
+     select: {
+        id: true,
+        fullName: true,
+        email: true,
+        country: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+  });
 
-    if (existingUser) {
-
-
-
-  }
-
-  if (!payload.password) {
-    throw new ApiError(400, 'Password is required');
-  }
-
-  const hashedPassword = await bcrypt.hash(payload.password, Number(config.bcrypt_salt_rounds));
-
-  const newUser = await prisma.user.create({
-    data:{
-      fullName: payload.fullName,
-      email: payload.email,
-      password: hashedPassword,
-      role: payload.role,
-
-      fcmToken: payload.fcmToken,
-      otp: otp,
-      expirationOtp: otpExpires,
+  if (existingUser?.status === UserStatus.ACTIVE) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      "User with this email already exists",
+    );
+  } else if (existingUser && existingUser.status === UserStatus.INACTIVE) {
+    emailSender(
+      existingUser.email,
+      generateOtpEmail(otp),
+      "Account Verification OTP",
+    );
+    await prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+        otp: otp,
+        expirationOtp: otpExpiration,
+      },
+    });
+    return existingUser;
+  } else {
+    if (!payload.password) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Password is required");
     }
-  })
-  if (!newUser) {
-    throw new ApiError(500, 'Failed to create user');
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(
+      payload.password,
+      Number(config.bcrypt_salt_rounds),
+    );
+
+    const emailHtml = generateOtpEmail(otp);
+    await emailSender(payload.email, emailHtml, "Account Verification OTP");
+
+    // Create user
+    const newUser = await prisma.user.create({
+      data: {
+        fullName: payload.fullName,
+        email: payload.email,
+        country: payload.country,
+        password: hashedPassword,
+        role: payload.role || UserRole.USER,
+        status: UserStatus.INACTIVE,
+        fcmToken: payload.fcmToken,
+        otp: otp,
+        expirationOtp: otpExpiration,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        country: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    return newUser;
   }
+};
 
-  const html = generateOtpEmail(otp);
-  await emailSender(payload.email, html, 'OTP Verification');
-
-  console.log("otp", otp);
-  return { message: 'An OTP has been sent to your email. Please verify your account.' };
-}
-
-// reterive all users from the database also searcing anf filetering
+// Get all users with filtering and pagination
 const getUsersFromDb = async (
   params: IUserFilterRequest,
-  options: IPaginationOptions
+  options: IPaginationOptions,
 ) => {
   const { page, limit, skip } = paginationHelper.calculatePagination(options);
   const { searchTerm, ...filterData } = params;
 
-  const andCondions: Prisma.UserWhereInput[] = [];
+  const andConditions: Prisma.UserWhereInput[] = [];
 
-  if (params.searchTerm) {
-    andCondions.push({
+  // Search by name or email
+  if (searchTerm) {
+    andConditions.push({
       OR: userSearchAbleFields.map((field) => ({
         [field]: {
-          contains: params.searchTerm,
+          contains: searchTerm,
           mode: "insensitive",
         },
       })),
     });
   }
 
+  // Filter by other fields
   if (Object.keys(filterData).length > 0) {
-    andCondions.push({
+    andConditions.push({
       AND: Object.keys(filterData).map((key) => ({
         [key]: {
           equals: (filterData as any)[key],
@@ -92,11 +125,14 @@ const getUsersFromDb = async (
       })),
     });
   }
-  const whereConditons: Prisma.UserWhereInput = { AND: andCondions };
+
+  const whereConditions: Prisma.UserWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
 
   const result = await prisma.user.findMany({
-    where: whereConditons,
+    where: whereConditions,
     skip,
+    take: limit,
     orderBy:
       options.sortBy && options.sortOrder
         ? {
@@ -109,19 +145,23 @@ const getUsersFromDb = async (
       id: true,
       fullName: true,
       email: true,
-      profileImage: true,
+      country: true,
       role: true,
+      status: true,
+      isCompleteProfile: true,
       createdAt: true,
       updatedAt: true,
     },
   });
+
   const total = await prisma.user.count({
-    where: whereConditons,
+    where: whereConditions,
   });
 
-  if (!result || result.length === 0) {
-    throw new ApiError(404, "No active users found");
+  if (result.length === 0) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No users found");
   }
+
   return {
     meta: {
       page,
@@ -132,89 +172,195 @@ const getUsersFromDb = async (
   };
 };
 
-// update profile by user won profile uisng token or email and id
-const updateProfile = async (req: Request) => {
-  console.log(req.file, req.body.data);
-  const file = req.file;
-  const stringData = req.body.data;
-  let image;
-  let parseData;
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      id: req.user.id,
-    },
-  });
-  if (!existingUser) {
-    throw new ApiError(404, "User not found");
-  }
-  if (file) {
-    image = (await fileUploader.uploadToDigitalOcean(file)).Location;
-  }
-  if (stringData) {
-    parseData = JSON.parse(stringData);
-  }
-  const result = await prisma.user.update({
-    where: {
-      id: existingUser.id, // Ensure `existingUser.id` is valid and exists
-    },
-    data: {
-      fullName: parseData.fullName || existingUser.fullName,
-      email: parseData.email || existingUser.email,
-      profileImage: image || existingUser.profileImage,
-      updatedAt: new Date(), // Assuming your model has an `updatedAt` field
-    },
+// Get single user by ID
+const getUserById = async (id: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id },
     select: {
       id: true,
       fullName: true,
       email: true,
-      profileImage: true,
-    },
-  });
-
-  return result;
-};
-
-// update user data into database by id fir admin
-const updateUserIntoDb = async (payload: IUser, id: string) => {
-  const userInfo = await prisma.user.findUniqueOrThrow({
-    where: {
-      id: id,
-    },
-  });
-  if (!userInfo)
-    throw new ApiError(httpStatus.NOT_FOUND, "User not found with id: " + id);
-
-  const result = await prisma.user.update({
-    where: {
-      id: userInfo.id,
-    },
-    data: payload,
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      profileImage: true,
+      country: true,
       role: true,
+      status: true,
+      isCompleteProfile: true,
       createdAt: true,
       updatedAt: true,
     },
   });
 
-  if (!result)
-    throw new ApiError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      "Failed to update user profile"
-    );
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  return user;
+};
+
+// Update user profile
+const updateProfile = async (
+  req: Request & { user?: any },
+  file?: Express.Multer.File,
+) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existingUser) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  let profileImageUrl = existingUser.profileImage ?? "";
+
+  // Upload image to Cloudinary if provided
+  if (file) {
+    const uploadResult = await fileUploader.uploadToCloudinary(file);
+    profileImageUrl = uploadResult.Location;
+  }
+
+  // Parse data if it's a string
+  let data = req.body.data || req.body;
+  if (typeof req.body.data === "string") {
+    data = JSON.parse(req.body.data);
+  }
+
+  const updateData: any = {};
+
+  if (data.fullName) updateData.fullName = data.fullName;
+  if (data.country) updateData.country = data.country;
+  if (data.isCompleteProfile !== undefined)
+    updateData.isCompleteProfile = data.isCompleteProfile;
+  if (file) updateData.profileImage = profileImageUrl;
+
+  const result = await prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      country: true,
+      profileImage: true,
+      role: true,
+      status: true,
+      isCompleteProfile: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
   return result;
 };
 
+// Complete user profile with data and image
+const completeProfile = async (
+  req: Request & { user?: any },
+  file?: Express.Multer.File,
+) => {
+  const userId = req.user?.id;
 
+  if (!userId) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existingUser) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  let profileImageUrl = existingUser.profileImage ?? "";
+
+  // Upload image to Cloudinary if provided
+  if (file) {
+    const uploadResult = await fileUploader.uploadToCloudinary(file);
+    profileImageUrl = uploadResult.Location;
+  }
+
+  // Parse data if it's a string
+  let data = req.body.data || req.body;
+  if (typeof req.body.data === "string") {
+    data = JSON.parse(req.body.data);
+  }
+
+  const updateData: any = {
+    fullName: data.fullName || existingUser.fullName,
+    country: data.country || existingUser.country,
+    
+    profileImage: profileImageUrl,
+    isCompleteProfile: true,
+  };
+
+  const result = await prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      country: true,
+      profileImage: true,
+      role: true,
+      status: true,
+      isCompleteProfile: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return result;
+};
+
+// Update user by ID (admin only)
+const updateUserIntoDb = async (payload: Partial<IUser>, id: string) => {
+  const existingUser = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!existingUser) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  const updateData: any = {};
+
+  if (payload.fullName) updateData.fullName = payload.fullName;
+  if (payload.country) updateData.country = payload.country;
+  if (payload.status) updateData.status = payload.status;
+  if (payload.role) updateData.role = payload.role;
+  if (payload.isCompleteProfile !== undefined)
+    updateData.isCompleteProfile = payload.isCompleteProfile;
+
+  const result = await prisma.user.update({
+    where: { id },
+    data: updateData,
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      country: true,
+      role: true,
+      status: true,
+      isCompleteProfile: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return result;
+};
 
 export const userService = {
   createUserIntoDb,
   getUsersFromDb,
+  getUserById,
   updateProfile,
+  completeProfile,
   updateUserIntoDb,
-
 };
