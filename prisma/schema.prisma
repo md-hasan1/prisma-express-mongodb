@@ -24,34 +24,11 @@ model User {
   updatedAt         DateTime       @updatedAt
   receiver          Notification[] @relation("Receiver")
   sender            Notification[] @relation("Sender")
-  products          Product[]
 
   @@map("users")
 }
 
-model Product {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  name              String
-  description       String?
-  price             Float
-  stock             Int
-  category          String?
-  image             String?
-  brand             String?
-  isDiscounted      Boolean         @default(false)
-  discountPercent   Float?
-  tags              String[]
-  isActive          Boolean         @default(true)
-  weight            Float?
-  colors             String[]
-  dimensions        String?
-  userId            String?         @db.ObjectId 
-  user              User?           @relation(fields: [userId], references: [id])
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  @@map("products")
-}
+// Product model removed
 
 model Notification {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId

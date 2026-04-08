@@ -1,6 +1,6 @@
 {
-  "id": "product-management-environments",
-  "name": "Product Management Environments",
+  "id": "api-environments",
+  "name": "API Environments",
   "values": [
     {
       "key": "LOCAL",

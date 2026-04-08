@@ -1,6 +1,6 @@
-# Product Management API Documentation
+# API Documentation
 
-A comprehensive REST API for product management with user authentication, OTP verification, profile management, and CRUD operations for products.
+A comprehensive REST API with user authentication, OTP verification, and user profile management.
 
 ## 🌐 Base URLs
 
@@ -11,7 +11,6 @@ A comprehensive REST API for product management with user authentication, OTP ve
 
 - [Authentication](#authentication)
 - [User Management](#user-management)
-- [Product Management](#product-management)
 - [Data Models](#data-models)
 - [Error Handling](#error-handling)
 
@@ -424,265 +423,6 @@ image: <file>  (file - optional)
 
 ---
 
-## 📦 Product Management
-
-All product endpoints require authentication.
-
-### Create Product
-**Endpoint**: `POST /products`
-
-**Headers**: 
-- `Authorization`: Bearer token (required)
-- `Content-Type`: multipart/form-data
-
-**Request Body (form-data)**:
-```
-data: {
-  "name": "Premium Headphones",
-  "description": "High quality wireless headphones",
-  "price": 149.99,
-  "stock": 25,
-  "category": "Electronics",
-  "brand": "Sony",
-  "isDiscounted": true,
-  "discountPercent": 10,
-  "tags": ["audio", "wireless", "premium"],
-  "isActive": true,
-  "weight": 0.25,
-  "colors": ["Black", "Silver"],
-  "dimensions": "20 x 18 x 8 cm"
-}  (text - JSON string)
-image: <file>  (file - optional)
-```
-
-**Data Types**:
-- `data`: JSON string containing:
-  - `name`: string (min 1 char, max 100 chars) - **required**
-  - `description`: string (max 1000 chars) - optional
-  - `price`: number (positive) - **required**
-  - `stock`: number (non-negative integer) - **required**
-  - `category`: string (max 50 chars) - optional
-  - `brand`: string (max 50 chars) - optional
-  - `isDiscounted`: boolean - optional
-  - `discountPercent`: number (0-100) - optional
-  - `tags`: array of strings (max 10 items, each max 30 chars) - optional
-  - `isActive`: boolean - optional
-  - `weight`: number (non-negative) - optional
-  - `colors`: array of strings (max 10 items, each max 30 chars) - optional
-  - `dimensions`: string (max 100 chars) - optional
-- `image`: File (optional - will be uploaded to Cloudinary)
-
-**Response** (201 CREATED):
-```json
-{
-  "statusCode": 201,
-  "success": true,
-  "message": "Product created successfully",
-  "data": {
-    "id": "507f1f77bcf86cd799439012",
-    "name": "Premium Headphones",
-    "description": "High quality wireless headphones",
-    "price": 149.99,
-    "stock": 25,
-    "category": "Electronics",
-    "image": "https://cloudinary.com/product-image.jpg",
-    "brand": "Sony",
-    "isDiscounted": true,
-    "discountPercent": 10,
-    "tags": ["audio", "wireless", "premium"],
-    "isActive": true,
-    "weight": 0.25,
-    "colors": ["Black", "Silver"],
-    "dimensions": "20 x 18 x 8 cm",
-    "userId": "507f1f77bcf86cd799439011",
-    "createdAt": "2026-02-03T14:00:00.000Z",
-    "updatedAt": "2026-02-03T14:00:00.000Z"
-  }
-}
-```
-
----
-
-### Get All Products
-**Endpoint**: `GET /products`
-
-**Headers**: 
-- `Authorization`: Bearer token (required)
-
-**Query Parameters** (all optional):
-- `searchTerm`: string (searches in name, brand, category)
-- `name`: string
-- `category`: string
-- `brand`: string
-- `limit`: number (default: 10)
-- `page`: number (default: 1)
-- `sortBy`: string (default: "createdAt")
-- `sortOrder`: string ("asc" | "desc", default: "desc")
-
-**Example**: `GET /products?searchTerm=headphones&category=Electronics&limit=20&page=1`
-
-**Response** (200 OK):
-```json
-{
-  "statusCode": 200,
-  "success": true,
-  "message": "Products retrieved successfully",
-  "data": {
-    "meta": {
-      "page": 1,
-      "limit": 20,
-      "total": 45
-    },
-    "data": [
-      {
-        "id": "507f1f77bcf86cd799439012",
-        "name": "Premium Headphones",
-        "description": "High quality wireless headphones",
-        "price": 149.99,
-        "stock": 25,
-        "category": "Electronics",
-        "image": "https://cloudinary.com/product-image.jpg",
-        "brand": "Sony",
-        "isDiscounted": true,
-        "discountPercent": 10,
-        "tags": ["audio", "wireless", "premium"],
-        "isActive": true,
-        "weight": 0.25,
-        "colors": ["Black", "Silver"],
-        "dimensions": "20 x 18 x 8 cm",
-        "userId": "507f1f77bcf86cd799439011",
-        "createdAt": "2026-02-03T14:00:00.000Z",
-        "updatedAt": "2026-02-03T14:00:00.000Z"
-      }
-    ]
-  }
-}
-```
-
-**Note**: 
-- Regular users see: Global products (userId = null) + their own products
-- Admins see: All products
-
----
-
-### Get Product By ID
-**Endpoint**: `GET /products/:id`
-
-**Headers**: 
-- `Authorization`: Bearer token (required)
-
-**Path Parameters**:
-- `id`: string (MongoDB ObjectId)
-
-**Response** (200 OK):
-```json
-{
-  "statusCode": 200,
-  "success": true,
-  "message": "Product retrieved successfully",
-  "data": {
-    "id": "507f1f77bcf86cd799439012",
-    "name": "Premium Headphones",
-    "description": "High quality wireless headphones",
-    "price": 149.99,
-    "stock": 25,
-    "category": "Electronics",
-    "image": "https://cloudinary.com/product-image.jpg",
-    "brand": "Sony",
-    "isDiscounted": true,
-    "discountPercent": 10,
-    "tags": ["audio", "wireless", "premium"],
-    "isActive": true,
-    "weight": 0.25,
-    "colors": ["Black", "Silver"],
-    "dimensions": "20 x 18 x 8 cm",
-    "userId": "507f1f77bcf86cd799439011",
-    "createdAt": "2026-02-03T14:00:00.000Z",
-    "updatedAt": "2026-02-03T14:00:00.000Z"
-  }
-}
-```
-
----
-
-### Update Product
-**Endpoint**: `PUT /products/:id`
-
-**Headers**: 
-- `Authorization`: Bearer token (required)
-- `Content-Type`: multipart/form-data
-
-**Path Parameters**:
-- `id`: string (MongoDB ObjectId)
-
-**Request Body (form-data)**:
-```
-data: {
-  "name": "Updated Premium Headphones",
-  "price": 139.99,
-  "stock": 20,
-  "discountPercent": 15
-}  (text - JSON string, all fields optional)
-image: <file>  (file - optional)
-```
-
-**Data Types**: Same as Create Product, but all fields are optional
-
-**Response** (200 OK):
-```json
-{
-  "statusCode": 200,
-  "success": true,
-  "message": "Product updated successfully",
-  "data": {
-    "id": "507f1f77bcf86cd799439012",
-    "name": "Updated Premium Headphones",
-    "description": "High quality wireless headphones",
-    "price": 139.99,
-    "stock": 20,
-    "category": "Electronics",
-    "image": "https://cloudinary.com/updated-image.jpg",
-    "brand": "Sony",
-    "isDiscounted": true,
-    "discountPercent": 15,
-    "tags": ["audio", "wireless", "premium"],
-    "isActive": true,
-    "weight": 0.25,
-    "colors": ["Black", "Silver"],
-    "dimensions": "20 x 18 x 8 cm",
-    "userId": "507f1f77bcf86cd799439011",
-    "createdAt": "2026-02-03T14:00:00.000Z",
-    "updatedAt": "2026-02-03T15:00:00.000Z"
-  }
-}
-```
-
-**Note**: Only the product owner or admin can update a product.
-
----
-
-### Delete Product
-**Endpoint**: `DELETE /products/:id`
-
-**Headers**: 
-- `Authorization`: Bearer token (required)
-
-**Path Parameters**:
-- `id`: string (MongoDB ObjectId)
-
-**Response** (200 OK):
-```json
-{
-  "statusCode": 200,
-  "success": true,
-  "message": "Product deleted successfully",
-  "data": null
-}
-```
-
-**Note**: Only the product owner or admin can delete a product.
-
----
 
 ## 📊 Data Models
 
@@ -724,32 +464,7 @@ image: <file>  (file - optional)
 
 ---
 
-### Product Model
-
-```typescript
-{
-  id: string;                    // MongoDB ObjectId
-  name: string;                  // Min 1 char, max 100 chars (required)
-  description: string | null;    // Max 1000 chars
-  price: number;                 // Positive number (required)
-  stock: number;                 // Non-negative integer (required)
-  category: string | null;       // Max 50 chars
-  image: string | null;          // URL from Cloudinary
-  brand: string | null;          // Max 50 chars
-  isDiscounted: boolean;         // Default: false
-  discountPercent: number | null;// 0-100
-  tags: string[];                // Array, max 10 items, each max 30 chars
-  isActive: boolean;             // Default: true
-  weight: number | null;         // Non-negative
-  colors: string[];              // Array, max 10 items, each max 30 chars
-  dimensions: string | null;     // Max 100 chars
-  userId: string | null;         // MongoDB ObjectId (null for global products)
-  createdAt: Date;               // Auto-generated
-  updatedAt: Date;               // Auto-generated
-}
-```
-
----
+<!-- Product model removed -->
 
 ## ⚠️ Error Handling
 
@@ -816,20 +531,9 @@ All errors follow this structure:
 
 ## 🔒 Authorization Rules
 
-### Product Access Control
+### Authorization Rules
 
-1. **Global Products** (userId = null):
-   - Visible to all authenticated users
-   - Only admins can create global products
-   - Only admins can update/delete global products
-
-2. **User Products** (userId != null):
-   - Users can only see their own products + global products
-   - Admins can see all products
-   - Only the product owner or admin can update/delete
-
-3. **Admin Roles**:
-   - `ADMIN` and `SUPER_ADMIN` have full access to all resources
+- `ADMIN` and `SUPER_ADMIN` have full access to all resources
 
 ---
 
@@ -858,7 +562,7 @@ All errors follow this structure:
 
 ### File Upload
 
-- Profile images and product images are uploaded to Cloudinary
+- Profile images are uploaded to Cloudinary
 - Supported via multipart/form-data
 - Maximum file size depends on Cloudinary configuration
 

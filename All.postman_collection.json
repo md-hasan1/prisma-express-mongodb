@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "all-modules-collection-2026",
-    "name": "Product Management API",
-    "description": "Single Postman collection for Auth, User, and Product modules.\n\n**Base URL:** {{baseUrl}}",
+    "name": "API Collection",
+    "description": "Single Postman collection for Auth and User modules.\n\n**Base URL:** {{baseUrl}}",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -246,102 +246,6 @@
               "path": ["users", ":id"]
             },
             "description": "Update a user by ID."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Products",
-      "item": [
-        {
-          "name": "Create Product",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "multipart/form-data" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "data", "value": "{\"name\":\"Premium Headphones\",\"description\":\"High quality wireless headphones\",\"price\":149.99,\"stock\":25,\"category\":\"Electronics\",\"brand\":\"Sony\",\"isDiscounted\":true,\"discountPercent\":10,\"tags\":[\"audio\",\"wireless\",\"premium\"],\"isActive\":true,\"weight\":0.25,\"colors\":[\"Black\",\"Silver\"],\"dimensions\":\"20 x 18 x 8 cm\"}", "type": "text" },
-                { "key": "image", "type": "file", "src": "" }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/products",
-              "host": ["{{baseUrl}}"],
-              "path": ["products"]
-            },
-            "description": "Create a new product.\n\n**Body (form-data):**\n- data: JSON string with all product fields (required)\n- image: file (optional, will be uploaded to Cloudinary)"
-          }
-        },
-        {
-          "name": "Get All Products",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/products",
-              "host": ["{{baseUrl}}"],
-              "path": ["products"]
-            },
-            "description": "Retrieve all products. Supports optional query params for filtering.\n\n**Query Params:**\n- name: string\n- category: string\n- brand: string\n- searchTerm: string"
-          }
-        },
-        {
-          "name": "Get Product By ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/products/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", ":id"]
-            },
-            "description": "Retrieve a product by its ID.\n\n**Path Param:**\n- id: string (Product ID)"
-          }
-        },
-        {
-          "name": "Update Product",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "multipart/form-data" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "data", "value": "{\"name\":\"Updated Premium Headphones\",\"description\":\"Updated description\",\"price\":139.99,\"stock\":20,\"category\":\"Electronics\",\"brand\":\"Sony\",\"isDiscounted\":true,\"discountPercent\":15,\"tags\":[\"audio\",\"wireless\"],\"isActive\":true,\"weight\":0.25,\"colors\":[\"Black\"],\"dimensions\":\"20 x 18 x 8 cm\"}", "type": "text" },
-                { "key": "image", "type": "file", "src": "" }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/products/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", ":id"]
-            },
-            "description": "Update a product by its ID.\n\n**Path Param:**\n- id: string (Product ID)"
-          }
-        },
-        {
-          "name": "Delete Product",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/products/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", ":id"]
-            },
-            "description": "Delete a product by its ID.\n\n**Path Param:**\n- id: string (Product ID)"
           }
         }
       ]
