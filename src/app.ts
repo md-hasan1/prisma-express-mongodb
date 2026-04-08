@@ -3,11 +3,13 @@ import httpStatus from "http-status";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
 import router from "./app/routes";
 import morgan from 'morgan';
 import path from "path";
 import createSystemLogger from "./app/middlewares/logger";
+import xssProtectionMiddleware from "./app/middlewares/xssProtection";
 const app: Application = express();
 
 export const corsOptions = {
@@ -49,10 +51,12 @@ const apiLimiter = rateLimit({
 });
 
 // Middleware setup
+app.use(helmet()); // Add security headers
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(xssProtectionMiddleware); // XSS protection - sanitize inputs
 app.use(express.static("public"));
 app.use(morgan(loggerFormat)); 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
