@@ -23,3 +23,5 @@ export const initiateSuperAdmin = async () => {
     data: payload,
   });
 };
+
+
