@@ -1,8 +1,8 @@
-node_modules
-# Keep environment variables out of version control
-dist
-.vercel
+node_modules
+# Keep environment variables out of version control
+dist
+.vercel
+# Logs
+system.log
+config.bat
 .env
-.env.local
-# Logs
-system.log
