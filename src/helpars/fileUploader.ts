@@ -6,7 +6,6 @@ import {
   ObjectCannedACL,
 } from "@aws-sdk/client-s3";
 import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
 import streamifier from "streamifier"; 
 import dotenv from "dotenv";
 import { Storage } from "@google-cloud/storage";
@@ -35,17 +34,6 @@ cloudinary.config({
 // Multer configuration using memoryStorage (for DigitalOcean & Cloudinary)
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
-// ✅ Fixed Cloudinary Storage
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-  
-    public_id: (req, file) => `${Date.now()}_${file.originalname}`,
-  },
-});
-
-const cloudinaryUpload = multer({ storage: cloudinaryStorage });
 
 // Upload single image
 const uploadSingle = upload.single("image");
@@ -189,62 +177,13 @@ const uploadToLocal = async (file: Express.Multer.File) => {
 // ✅ No Name Changes, Just Fixes
 
 
-// ✅ New: ZenexCloud S3v4 Upload
-const uploadToZenexCloud = async (file: Express.Multer.File) => {
-  if (!file) {
-    throw new Error("File is required for uploading.");
-  }
-
-  // ZenexCloud S3 API commonly runs on :9000 without TLS; use HTTP
-  const endpoint = (process.env.ZENEX_ENDPOINT || "http://vault.zenexcloud.com:9000").replace(/\/$/, "");
-  const accessKeyId = process.env.ZENEX_ACCESS_KEY || "7SnO9zrkvWEacOSREMXI";
-  const secretAccessKey = process.env.ZENEX_SECRET_KEY || "3SoY01MKsJqyGwlIuYVcPuMQrkMc3OjGco46Bkx9";
-  const bucket = process.env.ZENEX_BUCKET;
-
-  const client = new S3Client({
-    region: process.env.ZENEX_REGION || "us-east-1",
-    endpoint,
-    forcePathStyle: true,
-    credentials: { accessKeyId, secretAccessKey },
-  });
-
-  // console.log(bucket,accessKeyId,secretAccessKey,endpoint)
-  try {
-    if (!bucket) {
-      throw new Error("ZENEX_BUCKET is required and must be an existing bucket.");
-    }
-    const Key = `pixel/test/${Date.now()}_${uuidv4()}_${file.originalname}`;
-    const uploadParams = {
-      Bucket: bucket,
-      Key,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    };
-
-    await client.send(new PutObjectCommand(uploadParams));
-
-    const publicEndpoint = (process.env.ZENEX_PUBLIC_ENDPOINT || endpoint).replace(/\/$/, "");
-    const fileURL = `${publicEndpoint}/${bucket}/${Key}`;
-    return {
-      Location: fileURL,
-      Bucket: bucket,
-      Key,
-    };
-  } catch (error) {
-    console.error("Error uploading file to ZenexCloud:", error);
-    throw error;
-  }
-};
-
 export const fileUploader = {
   upload,
   uploadSingle,
   uploadMultipleImage,
   updateProfile,
   uploadFile,
-  cloudinaryUpload,
   uploadToDigitalOcean,
   uploadToCloudinary,
-  uploadToGoogleCloud,
-  uploadToZenexCloud
+  uploadToGoogleCloud
 };

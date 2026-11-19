@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { json } from "stream/consumers";
-import { AnyZodObject } from "zod";
+import { ZodType } from "zod";
 
 const validateRequest =
-  (schema: AnyZodObject) =>
+  (schema: ZodType) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       req.body = req.body.data ? JSON.parse(req.body.data) : req.body;
