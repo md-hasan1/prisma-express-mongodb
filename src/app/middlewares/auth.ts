@@ -7,7 +7,6 @@ import httpStatus from "http-status";
 import ApiError from "../../errors/ApiErrors";
 import { jwtHelpers } from "../../helpars/jwtHelpers";
 import prisma from "../../shared/prisma";
-import { ChildProcess } from "child_process";
 
 const auth = (...roles: string[]) => {
   return async (
@@ -18,7 +17,6 @@ const auth = (...roles: string[]) => {
     try {
  const token = req.headers.authorization?.split(" ").includes("Bearer") ? req.headers.authorization?.split(" ")[1] : req.headers.authorization;
 
-console.log(token);
       if (!token) {
         throw new ApiError(httpStatus.UNAUTHORIZED, "You are not authorized!");
       }
@@ -27,7 +25,6 @@ console.log(token);
         token,
        config.jwt.jwt_secret as Secret,
       );
-      console.log("|test2");
       const { id, role, iat } = verifiedUser;
 
       const user = await prisma.user.findUnique({
